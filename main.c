@@ -202,7 +202,7 @@ int main(int argc, char *argv[]) {
 
     const char *shadow_file = argv[1];
     const char *dictionary_file = argv[2];
-    NUM_THREADS = argv[3]; // Convert the number of threads to an integer
+    NUM_THREADS = atoi(argv[3]); // Convert the number of threads to an integer
 
     if (NUM_THREADS <= 0) {
         fprintf(stderr, "Error: Number of threads must be greater than 0.\n");
@@ -225,6 +225,10 @@ int main(int argc, char *argv[]) {
     start = time(NULL);
 
     while ((read = getline(&user, &len, fptrs)) != -1) {
+        if (strchr(user, '*') != NULL) {
+            //printf("The user string contains an asterisk (*): %s\n", user);
+            continue;
+        }
         char *method = gettoken(user, "$", 2);
         switch (method[0]) {
         case '1':
