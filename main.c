@@ -6,9 +6,8 @@
 #include <time.h>
 #include <pthread.h>
 #include <stdatomic.h>
-//This is Pippo und Pappo
+
 int NUM_THREADS;
-// This is Pappo und Pippo
 atomic_int stop_flag;
 
 typedef struct {
