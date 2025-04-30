@@ -8,6 +8,8 @@
 #include <stdatomic.h>
 
 int NUM_THREADS;
+
+int NUM_THREADS;
 atomic_int stop_flag;
 
 typedef struct {
