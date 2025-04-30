@@ -108,35 +108,66 @@ char * guess(const char * password, const char * salt, struct crypt_data *cdata)
     }
     return hashed;
 }
-
-// Function to be executed by each thread
-void* password_guess(void* arg) {
-    thread_args *args = (thread_args*)arg;
-    int thread_id = args->thread_id;
-    const char *dictionary_file = args->dictionary_file;
-
-    struct crypt_data cdata;
-    cdata.initialized = 0;
-
+char **load_dictionary(const char *dictionary_file, size_t *word_count) {
     FILE *fptrd = fopen(dictionary_file, "r");
     if (fptrd == NULL) {
         perror("Error opening dictionary file");
         return NULL;
     }
 
+    char **dictionary = NULL;
     char *word = NULL;
-    size_t wlen = 0;
-    size_t wread;
-    char (*array)[100 + 3] = malloc(4 * (100 + 3));
-    while ((wread = getline(&word, &wlen, fptrd)) != -1) {
-        if (wread == -1) {
-            perror("getline");
-            break;
+    size_t len = 0;
+    size_t count = 0;
+
+    while (getline(&word, &len, fptrd) != -1) {
+        char *newline = strrchr(word, '\n');
+        if (newline) *newline = '\0'; // Remove newline character
+
+        dictionary = realloc(dictionary, (count + 1) * sizeof(char *));
+        if (!dictionary) {
+            perror("Memory allocation failed");
+            fclose(fptrd);
+            free(word);
+            return NULL;
         }
 
-        // Process the word (existing logic)
-        char *newline = strrchr(word, '\n');
-        if (newline) *newline = '\0';
+        dictionary[count] = strdup(word); // Allocate memory for the word
+        if (!dictionary[count]) {
+            perror("Memory allocation failed");
+            fclose(fptrd);
+            free(word);
+            return NULL;
+        }
+
+        count++;
+    }
+
+    free(word);
+    fclose(fptrd);
+
+    *word_count = count;
+    return dictionary;
+}
+// Function to be executed by each thread
+void* password_guess(void* arg) {
+    thread_args *args = (thread_args*)arg;
+    int thread_id = args->thread_id;
+
+    struct crypt_data cdata;
+    cdata.initialized = 0;
+
+    extern char **dictionary; // Access the shared dictionary
+    extern size_t dictionary_size; // Access the shared dictionary size
+
+    char (*array)[100 + 3] = malloc(4 * (100 + 3));
+    if (!array) {
+        perror("Memory allocation failed");
+        return NULL;
+    }
+
+    for (size_t w = 0; w < dictionary_size; w++) {
+        char *word = dictionary[w];
 
         char *word_capitalized = capitalize(word);
         char *inputs[4] = {word, with_number(word), word_capitalized, with_number(word_capitalized)};
@@ -150,24 +181,24 @@ void* password_guess(void* arg) {
         if (NUM_THREADS > 3) {
             if (thread_id < 4) {
                 hashedword = guess(array[thread_id], user_instance.fullsalt, &cdata);
-                CHECK_PASSWORD_MATCH(user_instance.pwdandsalt, hashedword, user_instance.username, array[thread_id], fptrd);
+                CHECK_PASSWORD_MATCH(user_instance.pwdandsalt, hashedword, user_instance.username, array[thread_id], NULL);
             }
         } else if (NUM_THREADS > 1) {
             if (thread_id == 0) {
                 hashedword = guess(array[thread_id], user_instance.fullsalt, &cdata);
-                CHECK_PASSWORD_MATCH(user_instance.pwdandsalt, hashedword, user_instance.username, array[thread_id], fptrd);
+                CHECK_PASSWORD_MATCH(user_instance.pwdandsalt, hashedword, user_instance.username, array[thread_id], NULL);
                 hashedword = guess(array[thread_id + 1], user_instance.fullsalt, &cdata);
-                CHECK_PASSWORD_MATCH(user_instance.pwdandsalt, hashedword, user_instance.username, array[thread_id + 1], fptrd);
+                CHECK_PASSWORD_MATCH(user_instance.pwdandsalt, hashedword, user_instance.username, array[thread_id + 1], NULL);
             } else if (thread_id == 1) {
                 hashedword = guess(array[thread_id + 1], user_instance.fullsalt, &cdata);
-                CHECK_PASSWORD_MATCH(user_instance.pwdandsalt, hashedword, user_instance.username, array[thread_id + 1], fptrd);
+                CHECK_PASSWORD_MATCH(user_instance.pwdandsalt, hashedword, user_instance.username, array[thread_id + 1], NULL);
                 hashedword = guess(array[thread_id + 2], user_instance.fullsalt, &cdata);
-                CHECK_PASSWORD_MATCH(user_instance.pwdandsalt, hashedword, user_instance.username, array[thread_id + 2], fptrd);
+                CHECK_PASSWORD_MATCH(user_instance.pwdandsalt, hashedword, user_instance.username, array[thread_id + 2], NULL);
             }
         } else {
             for (int x = 0; x < 4; x++) {
                 hashedword = guess(array[x], user_instance.fullsalt, &cdata);
-                CHECK_PASSWORD_MATCH(user_instance.pwdandsalt, hashedword, user_instance.username, array[x], fptrd);
+                CHECK_PASSWORD_MATCH(user_instance.pwdandsalt, hashedword, user_instance.username, array[x], NULL);
             }
         }
         CHECK_DONE;
@@ -183,13 +214,13 @@ void* password_guess(void* arg) {
                 array[x][len] = (i / 10) + '0';
                 array[x][len + 1] = (i % 10) + '0';
                 hashedword = guess(array[x], user_instance.fullsalt, &cdata);
-                CHECK_PASSWORD_MATCH(user_instance.pwdandsalt, hashedword, user_instance.username, array[x], fptrd);
+                CHECK_PASSWORD_MATCH(user_instance.pwdandsalt, hashedword, user_instance.username, array[x], NULL);
                 CHECK_DONE;
             }
         }
     }
+
     free(array);
-    fclose(fptrd);
     return NULL;
 }
 
@@ -206,6 +237,13 @@ int main(int argc, char *argv[]) {
 
     if (NUM_THREADS <= 0) {
         fprintf(stderr, "Error: Number of threads must be greater than 0.\n");
+        return 1;
+    }
+
+    // Load the dictionary into memory
+    size_t dictionary_size = 0;
+    char **dictionary = load_dictionary(dictionary_file, &dictionary_size);
+    if (!dictionary) {
         return 1;
     }
 
@@ -226,9 +264,9 @@ int main(int argc, char *argv[]) {
 
     while ((read = getline(&user, &len, fptrs)) != -1) {
         if (strchr(user, '*') != NULL) {
-            //printf("The user string contains an asterisk (*): %s\n", user);
             continue;
         }
+
         char *method = gettoken(user, "$", 2);
         switch (method[0]) {
         case '1':
@@ -262,7 +300,6 @@ int main(int argc, char *argv[]) {
 
         for (int i = 0; i < NUM_THREADS; i++) {
             args[i].thread_id = i;
-            args[i].dictionary_file = dictionary_file;
             pthread_create(&threads[i], NULL, password_guess, &args[i]);
         }
 
@@ -280,5 +317,12 @@ int main(int argc, char *argv[]) {
 
     fclose(fptrs);
     free(user);
+
+    // Free the dictionary
+    for (size_t i = 0; i < dictionary_size; i++) {
+        free(dictionary[i]);
+    }
+    free(dictionary);
+
     return 0;
 }
