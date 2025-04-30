@@ -12,6 +12,9 @@ int NUM_THREADS;
 int NUM_THREADS;
 atomic_int stop_flag;
 
+char** dictionary;
+size_t dictionary_size = 0;
+
 typedef struct {
     char * username; 
     char * pwdandsalt;
@@ -31,17 +34,12 @@ user_struct user_instance;
     if (!strcmp(pwdandsalt, hashedword)) { \
         printf("Thread %d -> La password di %s è: %s\n \n", thread_id, username, word); \
         atomic_store(&stop_flag, 1); \
-        if (fptrd != NULL) { \
-            fclose(fptrd); \
-            fptrd = NULL; \
-        } \
         return NULL; \
     } \
 
 // Macro for checking if the stop flag is set
 #define CHECK_DONE \
     if (atomic_load(&stop_flag)) { \
-        fclose(fptrd); \
         return NULL; \
     } \
 
@@ -157,15 +155,11 @@ void* password_guess(void* arg) {
     struct crypt_data cdata;
     cdata.initialized = 0;
 
-    extern char **dictionary; // Access the shared dictionary
-    extern size_t dictionary_size; // Access the shared dictionary size
-
     char (*array)[100 + 3] = malloc(4 * (100 + 3));
     if (!array) {
         perror("Memory allocation failed");
         return NULL;
     }
-
     for (size_t w = 0; w < dictionary_size; w++) {
         char *word = dictionary[w];
 
@@ -241,8 +235,7 @@ int main(int argc, char *argv[]) {
     }
 
     // Load the dictionary into memory
-    size_t dictionary_size = 0;
-    char **dictionary = load_dictionary(dictionary_file, &dictionary_size);
+    dictionary = load_dictionary(dictionary_file, &dictionary_size);
     if (!dictionary) {
         return 1;
     }
@@ -259,15 +252,15 @@ int main(int argc, char *argv[]) {
     char *user = NULL;
     size_t len = 0;
     size_t read;
-    time_t start, end;
-    start = time(NULL);
+    struct timespec start, end;
+    clock_gettime(CLOCK_MONOTONIC, &start);
 
     while ((read = getline(&user, &len, fptrs)) != -1) {
-        if (strchr(user, '*') != NULL) {
-            continue;
-        }
 
         char *method = gettoken(user, "$", 2);
+        if (method == NULL || !(*method == '1' || *method == '5' || *method == '6' || *method == 'y')) {
+            continue;
+        }
         switch (method[0]) {
         case '1':
             printf("Method: MD5\n");
@@ -298,6 +291,7 @@ int main(int argc, char *argv[]) {
         user_instance.fullsalt = fullsalt;
         stop_flag = 0;
 
+        // Create threads
         for (int i = 0; i < NUM_THREADS; i++) {
             args[i].thread_id = i;
             pthread_create(&threads[i], NULL, password_guess, &args[i]);
@@ -311,9 +305,9 @@ int main(int argc, char *argv[]) {
             printf("Password not found for %s\n", username);
         }
     }
-
-    end = time(NULL);
-    printf("Elapsed time: %.2f seconds\n", difftime(end, start));
+    clock_gettime(CLOCK_MONOTONIC, &end);
+    double elapsed_time = (end.tv_sec - start.tv_sec) + (end.tv_nsec - start.tv_nsec) / 1e9;
+    printf("Elapsed time: %.6f seconds\n", elapsed_time);
 
     fclose(fptrs);
     free(user);
