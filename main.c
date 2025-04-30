@@ -6,7 +6,7 @@
 #include <time.h>
 #include <pthread.h>
 #include <stdatomic.h>
-
+//This is Pippo und Pappo
 int NUM_THREADS;
 
 atomic_int stop_flag;
