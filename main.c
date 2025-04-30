@@ -127,6 +127,7 @@ void* password_guess(void* arg) {
     char *word = NULL;
     size_t wlen = 0;
     size_t wread;
+    char (*array)[100 + 3] = malloc(4 * (100 + 3));
     while ((wread = getline(&word, &wlen, fptrd)) != -1) {
         if (wread == -1) {
             perror("getline");
@@ -140,7 +141,6 @@ void* password_guess(void* arg) {
         char *word_capitalized = capitalize(word);
         char *inputs[4] = {word, with_number(word), word_capitalized, with_number(word_capitalized)};
         size_t len = strlen(word);
-        char (*array)[len + 3] = malloc(4 * (len + 3));
 
         for (int i = 0; i < 4; i++) {
             strcpy(array[i], inputs[i]);
@@ -187,9 +187,8 @@ void* password_guess(void* arg) {
                 CHECK_DONE;
             }
         }
-        free(array);
     }
-
+    free(array);
     fclose(fptrd);
     return NULL;
 }
