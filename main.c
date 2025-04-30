@@ -97,7 +97,6 @@ void get_interval(int* start, int* stop, int id) {
     *stop = *start + quotient + (id < remainder ? 1 : 0);
     //printf("Thread %d: start = %d, stop = %d\n", id, *start, *stop);     
 }
-//pippopappo
 
 // Function to guess the password
 char * guess(const char * password, const char * salt, struct crypt_data *cdata) {
