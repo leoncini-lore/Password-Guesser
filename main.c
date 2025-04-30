@@ -6,7 +6,7 @@
 #include <time.h>
 #include <pthread.h>
 #include <stdatomic.h>
-
+//This is Pippo und Pappo
 int NUM_THREADS;
 
 atomic_int stop_flag;
@@ -97,7 +97,6 @@ void get_interval(int* start, int* stop, int id) {
     *stop = *start + quotient + (id < remainder ? 1 : 0);
     //printf("Thread %d: start = %d, stop = %d\n", id, *start, *stop);     
 }
-//pippopappo
 
 // Function to guess the password
 char * guess(const char * password, const char * salt, struct crypt_data *cdata) {
