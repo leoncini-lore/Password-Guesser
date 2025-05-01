@@ -242,7 +242,7 @@ void* password_guess(void* arg) {
             }
         }
         if (!stop_flag) {
-            printf("Password not found for %s\n", username);
+            printf("Password non trovata per %s\n", username);
         }
     }
 

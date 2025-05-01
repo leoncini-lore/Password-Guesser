@@ -304,7 +304,7 @@ int main(int argc, char *argv[]) {
         }
 
         if (!stop_flag) {
-            printf("Password not found for %s\n", username);
+            printf("Password non trovata per %s\n", username);
         }
     }
     #ifdef CLOCK_MONOTONIC
