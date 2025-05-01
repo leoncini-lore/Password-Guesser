@@ -1,4 +1,4 @@
-#define _POSIX_C_SOURCE 199309L
+// Description: This program is a parallel password cracker that uses multiple threads to guess passwords from a shadow file using a dictionary. It utilizes the crypt library for hashing and compares the hashed passwords with the stored hashes in the shadow file.
 #include <stdio.h>
 #include <crypt.h>
 #include <string.h>

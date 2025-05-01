@@ -32,7 +32,7 @@ user_struct user_instance;
 // Macros for checking password match
 #define CHECK_PASSWORD_MATCH(pwdandsalt, hashedword, username, word, fptrd) \
     if (!strcmp(pwdandsalt, hashedword)) { \
-        printf("Thread %d -> La password di %s è: %s\n \n", thread_id, username, word); \
+        printf("Thread %d -> La password di %s è: %s\n", thread_id, username, word); \
         atomic_store(&stop_flag, 1); \
         return NULL; \
     } \
