@@ -253,7 +253,9 @@ int main(int argc, char *argv[]) {
     size_t len = 0;
     size_t read;
     struct timespec start, end;
+    #ifdef CLOCK_MONOTONIC
     clock_gettime(CLOCK_MONOTONIC, &start);
+    #endif
 
     while ((read = getline(&user, &len, fptrs)) != -1) {
 
@@ -305,7 +307,9 @@ int main(int argc, char *argv[]) {
             printf("Password not found for %s\n", username);
         }
     }
+    #ifdef CLOCK_MONOTONIC
     clock_gettime(CLOCK_MONOTONIC, &end);
+    #endif
     double elapsed_time = (end.tv_sec - start.tv_sec) + (end.tv_nsec - start.tv_nsec) / 1e9;
     printf("Elapsed time: %.6f seconds\n", elapsed_time);
 

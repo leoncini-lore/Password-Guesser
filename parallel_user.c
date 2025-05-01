@@ -281,7 +281,9 @@ int main(int argc, char *argv[]) {
     thread_args args[NUM_THREADS];
 
     struct timespec start, end;
+    #ifdef CLOCK_MONOTONIC
     clock_gettime(CLOCK_MONOTONIC, &start);
+    #endif
     printf("Starting password cracking with %d threads...\n", NUM_THREADS);
     for (int i = 0; i < NUM_THREADS; i++) {
         args[i].thread_id = i;
@@ -292,7 +294,10 @@ int main(int argc, char *argv[]) {
         pthread_join(threads[i], NULL);
     }
 
+    #ifdef CLOCK_MONOTONIC
     clock_gettime(CLOCK_MONOTONIC, &end);
+    #endif
+    
     double elapsed_time = (end.tv_sec - start.tv_sec) + (end.tv_nsec - start.tv_nsec) / 1e9;
     printf("Elapsed time: %.6f seconds\n", elapsed_time);
 
