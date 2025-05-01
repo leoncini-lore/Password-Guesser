@@ -1,3 +1,4 @@
+#define _POSIX_C_SOURCE 199309L
 #include <stdio.h>
 #include <crypt.h>
 #include <string.h>
@@ -5,7 +6,6 @@
 #include <stdbool.h>
 #include <time.h>
 #include <pthread.h>
-
 
 int NUM_THREADS;
 
@@ -26,7 +26,7 @@ typedef struct {
 // Macros for checking password match
 #define CHECK_PASSWORD_MATCH(pwdandsalt, hashedword, username, word, fptrd) \
     if (!strcmp(pwdandsalt, hashedword)) { \
-        printf("Thread %d -> La password di %s è: %s\n \n", thread_id, username, word); \
+        printf("Thread %d -> La password di %s è: %s\n", thread_id, username, word); \
         stop_flag = true; \
     } \
 
