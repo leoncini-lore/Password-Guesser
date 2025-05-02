@@ -19,7 +19,7 @@ typedef struct {
     char * username; 
     char * pwdandsalt;
     char * hashedpasswd;
-    const char * fullsalt;
+    char * fullsalt;
 } user_struct;
 
 typedef struct {
@@ -34,24 +34,28 @@ user_struct user_instance;
     if (!strcmp(pwdandsalt, hashedword)) { \
         printf("Thread %d -> La password di %s è: %s\n", thread_id, username, word); \
         atomic_store(&stop_flag, 1); \
-        return NULL; \
-    } \
+        goto cleanup; \
+    }
+
 
 // Macro for checking if the stop flag is set
 #define CHECK_DONE \
     if (atomic_load(&stop_flag)) { \
-        return NULL; \
-    } \
+        goto cleanup; \
+    }
 
 char * gettoken(char * str, char * delim, int pos) {
-  char * strtmp = strdup(str);
-  char *ch = strtok(strtmp, delim);
-  while (ch != NULL && pos>1) {
-    ch = strtok(NULL, delim);
-    pos--;
-  }
-  return ch;
+    char *strtmp = strdup(str);
+    char *ch = strtok(strtmp, delim);
+    while (ch != NULL && pos > 1) {
+        ch = strtok(NULL, delim);
+        pos--;
+    }
+    char *result = ch ? strdup(ch) : NULL;
+    free(strtmp);
+    return result;
 }
+
 
 // Function to replace letters with numbers
 char * with_number (char * word) {
@@ -218,6 +222,7 @@ void* password_guess(void* arg) {
         }
     }
 
+cleanup:
     free(array);
     return NULL;
 }
@@ -286,7 +291,7 @@ int main(int argc, char *argv[]) {
         char *username = gettoken(user, ":", 1);
         char *pwdandsalt = gettoken(user, ":", 2);
         char *hashedpasswd = gettoken(pwdandsalt, "$", 4);
-        const char *fullsalt = strdup(pwdandsalt);
+        char *fullsalt = strdup(pwdandsalt);
         char *last_occurrence = strrchr(fullsalt, '$');
         if (!last_occurrence) return 1;
         *last_occurrence = '\0';
@@ -296,7 +301,6 @@ int main(int argc, char *argv[]) {
         user_instance.hashedpasswd = hashedpasswd;
         user_instance.fullsalt = fullsalt;
         stop_flag = 0;
-        free(fullsalt);
 
         // Create threads
         for (int i = 0; i < NUM_THREADS; i++) {

@@ -158,7 +158,8 @@ char **load_shadow(const char *file_name, size_t *word_count) {
         if (newline) *newline = '\0'; // Remove newline character
         char *method = gettoken(word, "$", 2);
         if (method == NULL || !(*method == '1' || *method == '5' || *method == '6' || *method == 'y')) {
-            continue;
+            free(method);
+            continue; // Skip lines that do not match the expected format
         }
         file = realloc(file, (count + 1) * sizeof(char *));
         if (!file) {
@@ -167,7 +168,6 @@ char **load_shadow(const char *file_name, size_t *word_count) {
             free(word);
             return NULL;
         }
-
         file[count] = strdup(word); // Allocate memory for the word
         if (!file[count]) {
             perror("Memory allocation failed");
@@ -175,7 +175,7 @@ char **load_shadow(const char *file_name, size_t *word_count) {
             free(word);
             return NULL;
         }
-
+        free(method);  // ✅ FREE HERE after using it
         count++;
     }
 
@@ -207,7 +207,7 @@ void* password_guess(void* arg) {
         char *username = gettoken(user, ":", 1);
         char *pwdandsalt = gettoken(user, ":", 2);
         char *hashedpasswd = gettoken(pwdandsalt, "$", 4);
-        const char *fullsalt = strdup(pwdandsalt);
+        char *fullsalt = strdup(pwdandsalt);
         char *last_occurrence = strrchr(fullsalt, '$');
         if (!last_occurrence) return NULL;
         *last_occurrence = '\0';
