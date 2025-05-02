@@ -30,16 +30,19 @@ typedef struct {
         stop_flag = true; \
     } \
 
-
+//modificata
 char * gettoken(char * str, char * delim, int pos) {
-  char * strtmp = strdup(str);
-  char *ch = strtok(strtmp, delim);
-  while (ch != NULL && pos>1) {
-    ch = strtok(NULL, delim);
-    pos--;
-  }
-  return ch;
+    char *strtmp = strdup(str);
+    char *ch = strtok(strtmp, delim);
+    while (ch != NULL && pos > 1) {
+        ch = strtok(NULL, delim);
+        pos--;
+    }
+    char *result = ch ? strdup(ch) : NULL;
+    free(strtmp);
+    return result;
 }
+
 
 // Function to replace letters with numbers
 char * with_number (char * word) {
@@ -220,6 +223,10 @@ void* password_guess(void* arg) {
                 strcpy(array[i], inputs[i]);
             }
 
+            free(word_capitalized);
+            free(inputs[1]);
+            free(inputs[3]);
+
             char *hashedword;
             
             for (int x = 0; !stop_flag && x < 4 ; x++) {
@@ -244,6 +251,11 @@ void* password_guess(void* arg) {
         if (!stop_flag) {
             printf("Password non trovata per %s\n", username);
         }
+        free(method);
+        free(username);
+        free(pwdandsalt);
+        free(hashedpasswd);
+        free(fullsalt);
     }
 
     free(array);

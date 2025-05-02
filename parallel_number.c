@@ -171,6 +171,10 @@ void* password_guess(void* arg) {
             strcpy(array[i], inputs[i]);
         }
 
+        free(word_capitalized);
+        free(inputs[1]);
+        free(inputs[3]);
+
         char *hashedword;
         if (NUM_THREADS > 3) {
             if (thread_id < 4) {
@@ -292,6 +296,7 @@ int main(int argc, char *argv[]) {
         user_instance.hashedpasswd = hashedpasswd;
         user_instance.fullsalt = fullsalt;
         stop_flag = 0;
+        free(fullsalt);
 
         // Create threads
         for (int i = 0; i < NUM_THREADS; i++) {
@@ -306,6 +311,11 @@ int main(int argc, char *argv[]) {
         if (!stop_flag) {
             printf("Password non trovata per %s\n", username);
         }
+        free(method);
+        free(username);
+        free(pwdandsalt);
+        free(hashedpasswd);
+        free(fullsalt);
     }
     #ifdef CLOCK_MONOTONIC
     clock_gettime(CLOCK_MONOTONIC, &end);
@@ -321,6 +331,6 @@ int main(int argc, char *argv[]) {
         free(dictionary[i]);
     }
     free(dictionary);
-
+    
     return 0;
 }
